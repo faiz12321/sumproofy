@@ -1,0 +1,16 @@
+SumProofy
+================
+
+This application bundles components of the Python interpreter, which is
+distributed under the Python Software Foundation License
+(https://docs.python.org/3/license.html - PSF-2.0). Copyright (c) 2001-2026
+Python Software Foundation. All rights reserved.
+
+On Windows it also bundles Tcl/Tk (used by tkinter for the file-picker
+dialog), distributed under the Tcl/Tk license terms
+(https://www.tcl.tk/software/tcltk/license.html). Copyright (c) Tcl/Tk
+contributors.
+
+Both licenses are permissive, notice-preserving licenses; this NOTICE file
+preserves those notices in the built application. SumProofy itself
+is MIT licensed (see LICENSE).

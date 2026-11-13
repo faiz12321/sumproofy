@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SumProofy</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background:#0e1013; color:#f2f2f0; font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif; font-size:21px; line-height:1.45; }
+  .wrap { min-height:100vh; padding:28px 22px; max-width:430px; margin:0 auto; }
+  .brand { font-size:30px; font-weight:700; margin:18px 0 6px; }
+  .sub { color:#b9bfc7; margin-bottom:34px; }
+  .bigbtn { display:block; width:100%; background:#2f81f7; color:#fff; border:0; border-radius:14px; padding:22px 18px; font-size:24px; font-weight:700; text-align:center; margin-bottom:26px; cursor:pointer; }
+  .bigbtn:disabled { opacity:.5; cursor:default; }
+  .ghost { background:#1b1f26; color:#e8eaed; border:2px solid #3a4048; }
+  .field { width:100%; background:#161a20; border:2px solid #3a4048; border-radius:14px; padding:20px 18px; color:#e8eaed; font-size:20px; margin-bottom:14px; font-family:inherit; }
+  .field::placeholder { color:#8b939e; }
+  .note { color:#8b939e; font-size:17px; margin-top:8px; }
+  .step { color:#8b939e; font-size:17px; margin-bottom:8px; }
+  .card { background:#161a20; border-radius:16px; padding:22px 20px; margin-bottom:22px; }
+  .fname { font-weight:700; font-size:22px; word-break:break-all; margin-bottom:14px; }
+  .hash { font-family:Consolas,Menlo,monospace; font-size:15px; color:#9fb7ff; word-break:break-all; }
+  .row { display:flex; gap:12px; align-items:center; margin-bottom:14px; }
+  .spin { width:26px; height:26px; border:4px solid #3a4048; border-top-color:#2f81f7; border-radius:50%; flex:none; animation:sp 1s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .badge { border-radius:16px; padding:24px 20px; text-align:center; margin-bottom:22px; }
+  .badge .big { font-size:34px; font-weight:800; letter-spacing:1px; }
+  .badge .why { font-size:19px; margin-top:8px; }
+  .ok { background:#10331f; border:2px solid #2ea043; color:#4ac26b; }
+  .ok .why { color:#7ee2a0; }
+  .bad { background:#3d1215; border:2px solid #da3633; color:#ff7b72; }
+  .bad .why { color:#ffa198; }
+  .unknown { background:#2b2a1f; border:2px solid #9e6a03; color:#e3b341; }
+  .unknown .why { color:#ecd28a; }
+  .warn { background:#2b2410; border:2px solid #9e6a03; border-radius:14px; padding:18px; font-size:18px; color:#e3b341; margin-bottom:22px; }
+  .signed { color:#8b939e; font-size:18px; margin-top:14px; }
+  .lbl { color:#8b939e; font-size:17px; margin-bottom:6px; }
+  .hidden { display:none; }
+  .again { text-align:center; margin-top:6px; }
+  .again a { color:#2f81f7; font-size:18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">SumProofy</div>
+  <div class="sub">Make sure a file you downloaded is the real one.</div>
+
+  <div id="view-start">
+    <button class="bigbtn" id="browse">1.&nbsp; Choose the downloaded file</button>
+    <div class="field hidden" id="pathfield" readonly></div>
+    <div class="step">Or type the file's path (if the chooser did not open):</div>
+    <input class="field" id="manualpath" type="text" placeholder="C:\Users\you\Downloads\app.exe" autocomplete="off">
+    <div class="note hidden" id="pickerhint" style="margin-bottom:14px;">The file chooser did not open. Type the file's path in the box above instead.</div>
+    <div class="step">2. Where did you get it? Paste the download page link (optional)</div>
+    <input class="field" id="pageurl" type="url" placeholder="Paste the download page link..." autocomplete="off">
+    <div class="note" style="margin-bottom:14px;">Paste the exact page where you clicked the download button, not just the site's home page. The home page usually does not show the file's fingerprint.</div>
+    <button class="bigbtn ghost" id="go" disabled>Check it</button>
+    <div class="note">It only reads the file. Nothing is uploaded or changed.</div>
+  </div>
+
+  <div id="view-checking" class="hidden">
+    <div class="card">
+      <div class="fname" id="c-fname"></div>
+      <div class="row"><div class="spin"></div><div id="c-stage">Working out the file's fingerprint...</div></div>
+    </div>
+  </div>
+
+  <div id="view-result" class="hidden">
+    <div class="badge ok hidden" id="b-ok"><div class="big">&#10003; MATCHES</div><div class="why" id="b-ok-why">This file is exactly what the maker published.</div></div>
+    <div class="badge bad hidden" id="b-bad"><div class="big">&#10007; DOES NOT MATCH</div><div class="why" id="b-bad-why">Do not run or open this file. Delete it and download it again from the maker's real site.</div></div>
+    <div class="badge unknown hidden" id="b-unknown"><div class="big">? NOT SURE</div><div class="why" id="b-unknown-why"></div></div>
+    <div class="card">
+      <div class="fname" id="r-fname"></div>
+      <div class="lbl">Your file's fingerprint</div>
+      <div class="hash" id="r-local" style="margin-bottom:14px;"></div>
+      <div id="r-official-block" class="hidden">
+        <div class="lbl" id="r-official-lbl"></div>
+        <div class="hash" id="r-official"></div>
+      </div>
+      <div class="signed hidden" id="r-signed"></div>
+    </div>
+    <div class="warn" id="r-warn">A match proves the download was not corrupted. It can't prove a website is honest. Only download from places you trust.</div>
+    <div class="again"><a href="#" id="reset">Check another file</a></div>
+  </div>
+</div>
+<script>
+(function(){
+  var TOKEN = window.__TOKEN__;
+  function $(id){ return document.getElementById(id); }
+  function show(id){ ['view-start','view-checking','view-result'].forEach(function(v){ $(v).classList.toggle('hidden', v!==id); }); }
+  var pickedPath = null;
+
+  function currentPath(){ return pickedPath || $('manualpath').value.trim(); }
+  $('manualpath').addEventListener('input', function(){ $('go').disabled = !currentPath(); });
+
+  $('browse').addEventListener('click', function(){
+    $('browse').disabled = true;
+    $('pickerhint').classList.add('hidden');
+    fetch('/api/browse', {headers:{'X-Token':TOKEN}}).then(function(r){return r.json();}).then(function(d){
+      $('browse').disabled = false;
+      if (d.path) { pickedPath = d.path; var f=$('pathfield'); f.textContent = d.path; f.classList.remove('hidden'); $('go').disabled = false; }
+      else { $('pickerhint').classList.remove('hidden'); $('manualpath').focus(); }
+    }).catch(function(){ $('browse').disabled = false; $('pickerhint').classList.remove('hidden'); });
+  });
+
+  $('go').addEventListener('click', function(){
+    var path = currentPath();
+    if (!path) return;
+    show('view-checking');
+    $('c-fname').textContent = path;
+    fetch('/api/check', {method:'POST', headers:{'X-Token':TOKEN,'Content-Type':'application/json'},
+      body: JSON.stringify({path:path, page_url:$('pageurl').value})})
+    .then(function(r){return r.json();}).then(render).catch(function(){
+      $('c-stage').textContent = 'Something went wrong. Try again.';
+      setTimeout(function(){ show('view-start'); }, 2000);
+    });
+  });
+
+  function render(d){
+    if (d.error) {
+      show('view-result');
+      $('b-ok').classList.add('hidden'); $('b-bad').classList.add('hidden');
+      $('b-unknown').classList.remove('hidden');
+      $('b-unknown-why').textContent = d.error;
+      $('r-fname').textContent = currentPath();
+      $('r-local').textContent = '-';
+      $('r-official-block').classList.add('hidden'); $('r-signed').classList.add('hidden');
+      $('r-warn').classList.add('hidden');
+      return;
+    }
+    show('view-result');
+    $('r-warn').classList.remove('hidden');
+    $('r-fname').textContent = d.file_name;
+    $('r-local').textContent = d.local_hash;
+    ['b-ok','b-bad','b-unknown'].forEach(function(b){ $(b).classList.add('hidden'); });
+    if (d.explanation) { $('b-ok-why').textContent = d.explanation; $('b-bad-why').textContent = d.explanation; }
+    if (d.verdict === 'match') $('b-ok').classList.remove('hidden');
+    else if (d.verdict === 'mismatch') $('b-bad').classList.remove('hidden');
+    else { $('b-unknown').classList.remove('hidden'); $('b-unknown-why').textContent = d.explanation; }
+    if (d.official && d.official.official_hash) {
+      $('r-official-block').classList.remove('hidden');
+      $('r-official-lbl').textContent = 'Official (' + (d.official.source || 'the maker') + ')';
+      $('r-official').textContent = d.official.official_hash;
+    } else { $('r-official-block').classList.add('hidden'); }
+    if (d.signature && d.signature.detail && d.signature.status !== 'not_windows' && d.signature.status !== 'not_signable') {
+      var s = $('r-signed'); s.classList.remove('hidden');
+      s.textContent = d.signature.signer ? ('Signed by: ' + d.signature.signer + ' - ' + d.signature.detail) : d.signature.detail;
+    } else { $('r-signed').classList.add('hidden'); }
+  }
+
+  $('reset').addEventListener('click', function(e){
+    e.preventDefault();
+    pickedPath = null; $('pathfield').classList.add('hidden'); $('go').disabled = true;
+    $('manualpath').value = ''; $('pickerhint').classList.add('hidden');
+    show('view-start');
+  });
+})();
+</script>
+</body>
+</html>
